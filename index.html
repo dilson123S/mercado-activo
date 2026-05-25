@@ -42,10 +42,15 @@
         <button class="btn-icon" onclick="resetSearch()" title="Limpiar filtro">✕</button>
       </div>
 
-      <!-- Sector Tag (single sector) -->
-      <nav class="filter-tags" id="sector-filters">
-        <button class="tag active" style="cursor: default;">🧠 Tecnología / IA</button>
-      </nav>
+      <!-- Sector Tag & Reset Button -->
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+        <nav class="filter-tags" id="sector-filters" style="margin-bottom: 0;">
+          <button class="tag active" style="cursor: default; margin-bottom: 0;">🧠 Tecnología / IA</button>
+        </nav>
+        <button class="btn" style="background: rgba(255, 56, 96, 0.1); color: var(--color-red); border: 1px solid var(--color-red); padding: 6px 12px; font-size: 11px; border-radius: 8px; cursor: pointer; transition: all 0.2s;" onclick="resetWholeGame()">
+          🔄 Reiniciar Partida
+        </button>
+      </div>
 
       <!-- Stocks List Container -->
       <div class="card" style="padding: 0; overflow: hidden; border-radius: 12px;">
@@ -251,21 +256,69 @@
     // State management variables
     let currentScreen = "dashboard";
     let selectedSymbol = null;
+    let unlockedStocks = [];
     let selectedQty = 1;
     let refreshInterval = null;
     let chartHistoryPoints = 35;
     let activeFilterSector = "ALL";
     let html5QrCode = null; // In-app camera QR reader instance
 
+    function loadUnlockedStocks() {
+      const stored = localStorage.getItem("city_venture_unlocked_stocks");
+      if (stored) {
+        try {
+          unlockedStocks = JSON.parse(stored);
+        } catch (e) {
+          unlockedStocks = [];
+        }
+      } else {
+        unlockedStocks = [];
+      }
+    }
+
+    function saveUnlockedStocks() {
+      localStorage.setItem("city_venture_unlocked_stocks", JSON.stringify(unlockedStocks));
+    }
+
+    function unlockStockSymbol(sym) {
+      if (STOCKS[sym] && !unlockedStocks.includes(sym)) {
+        unlockedStocks.push(sym);
+        saveUnlockedStocks();
+        showToast(`¡Acción ${sym} incorporada al mercado!`, "success");
+        buildStocksList();
+        buildTickerTape();
+        renderNewsScreen();
+        renderCentralTVScreen();
+      }
+    }
+
+    function resetWholeGame() {
+      if (confirm("¿Estás seguro de que deseas reiniciar la partida? Esto borrará todas las acciones desbloqueadas y eventos activos.")) {
+        unlockedStocks = [];
+        saveUnlockedStocks();
+        clearAllActiveEvents();
+        selectedSymbol = null;
+        showToast("Partida reiniciada. El mercado está en blanco de nuevo.", "success");
+        buildStocksList();
+        buildTickerTape();
+        renderNewsScreen();
+        renderCentralTVScreen();
+        switchScreen("dashboard");
+      }
+    }
+
     // Setup and Initializations
     window.addEventListener("DOMContentLoaded", () => {
       loadActiveEvents();
+      loadUnlockedStocks();
       
       // Check query parameter for deep-linking (e.g. market.html?symbol=NVDA)
       const urlParams = new URLSearchParams(window.location.search);
       const symbolParam = urlParams.get("symbol");
       if (symbolParam && STOCKS[symbolParam.toUpperCase()]) {
-        selectedSymbol = symbolParam.toUpperCase();
+        const sym = symbolParam.toUpperCase();
+        unlockStockSymbol(sym);
+        selectedSymbol = sym;
         switchScreen("detail");
       }
 
@@ -375,6 +428,7 @@
         const sym = url.searchParams.get("symbol");
         if (sym && STOCKS[sym.toUpperCase()]) {
           const selected = sym.toUpperCase();
+          unlockStockSymbol(selected);
           selectedSymbol = selected;
           showToast(`¡Carta detectada: ${selected}!`, "success");
           stopQRScanner().then(() => {
@@ -387,6 +441,7 @@
         // Option B: Just raw symbol letters
         const cleanCode = decodedText.trim().toUpperCase();
         if (STOCKS[cleanCode]) {
+          unlockStockSymbol(cleanCode);
           selectedSymbol = cleanCode;
           showToast(`¡Carta detectada: ${selectedSymbol}!`, "success");
           stopQRScanner().then(() => {
@@ -404,11 +459,12 @@
       if (!wrap) return;
       
       wrap.innerHTML = "";
+      if (unlockedStocks.length === 0) return;
+
       const now = Date.now();
       
       // Repeat list twice to ensure infinite loops smoothly
-      const stockKeys = Object.keys(STOCKS);
-      const doubleKeys = [...stockKeys, ...stockKeys];
+      const doubleKeys = [...unlockedStocks, ...unlockedStocks];
       
       doubleKeys.forEach(sym => {
         const stock = STOCKS[sym];
@@ -436,10 +492,21 @@
       if (!container) return;
 
       container.innerHTML = "";
+      
+      if (unlockedStocks.length === 0) {
+        container.innerHTML = `
+          <div class="empty-state" style="padding: 40px; text-align: center; color: var(--color-muted);">
+            No hay acciones activas en el mercado. <br><br>
+            <span style="font-size: 13px; color: var(--color-cyan);">Escanea el código QR de una carta de acción física para empezar a cotizar.</span>
+          </div>
+        `;
+        return;
+      }
+
       const now = Date.now();
       const query = document.getElementById("search-input").value.toLowerCase().trim();
 
-      Object.keys(STOCKS).forEach(sym => {
+      unlockedStocks.forEach(sym => {
         const stock = STOCKS[sym];
         
         // Apply filters
@@ -623,6 +690,22 @@
       const activeContainer = document.getElementById("active-events-container");
       const feed = document.getElementById("news-feed-container");
 
+      if (unlockedStocks.length === 0) {
+        titleEl.innerText = "Esperando la primera acción en el mercado";
+        impactEl.innerText = "--";
+        impactEl.className = "news-impact";
+        remainingEl.innerText = "";
+        wrapper.style.display = "none";
+        if (feed) {
+          feed.innerHTML = `
+            <div class="empty-state" style="padding: 24px; text-align: center; color: var(--color-muted);">
+              Las noticias del mercado aparecerán después de que desbloquees la primera acción.
+            </div>
+          `;
+        }
+        return;
+      }
+
       const currentNews = getActiveNewsAtTime(now);
       
       // Update news title
@@ -714,14 +797,25 @@
       if (!container) return;
 
       container.innerHTML = "";
-      // Render all stocks (single sector)
+      
+      if (unlockedStocks.length === 0) {
+        container.innerHTML = `
+          <div class="empty-state" style="padding: 40px; text-align: center; color: var(--color-muted); border: 1px dashed rgba(255,255,255,0.12); border-radius: 16px;">
+            📺 La Mesa TV está en espera. <br><br>
+            Las cotizaciones de las acciones aparecerán aquí automáticamente en tiempo real a medida que los jugadores las escaneen y entren a cotizar.
+          </div>
+        `;
+        return;
+      }
+
+      // Render unlocked stocks (single sector)
       const card = document.createElement("div");
       card.className = "card";
       card.style.padding = "14px";
       card.style.background = "rgba(10, 15, 30, 0.5)";
       
       let stocksHtml = "";
-      Object.keys(STOCKS).forEach(sym => {
+      unlockedStocks.forEach(sym => {
         const stock = STOCKS[sym];
         const currentPrice = getPriceAtTime(sym, now);
         const prevPrice = getPriceAtTime(sym, now - 60000); // 1m ago
