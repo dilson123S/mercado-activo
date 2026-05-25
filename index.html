@@ -1,0 +1,810 @@
+  <!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>City Venture | Terminal de Acciones Físicas</title>
+  <link rel="stylesheet" href="market.css">
+  <!-- Lightweight, highly compatible offline QR reading library -->
+  <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+</head>
+<body>
+
+  <!-- Toast system for immediate feedback -->
+  <div id="toast-notification" class="toast">¡Operación exitosa!</div>
+
+  <div class="app-container">
+    
+    <!-- Top Global Header -->
+    <header>
+      <div class="logo-container">
+        <div class="logo-icon">CV</div>
+        <div class="logo-text">CITY VENTURE</div>
+      </div>
+      <div style="font-size: 11px; font-weight: 800; color: var(--color-cyan); border: 1px dashed var(--color-cyan); border-radius: 6px; padding: 4px 8px; font-family: var(--font-mono);">
+        ORÁCULO DE PRECIOS
+      </div>
+    </header>
+
+    <!-- Real-time Scrolling Ticker Tape -->
+    <section class="ticker-tape">
+      <div class="ticker-wrap" id="ticker-wrap-content">
+        <!-- Will be filled by JS -->
+      </div>
+    </section>
+
+    <!-- ==========================================
+         SCREEN 1: MARKET DASHBOARD (STOCK LISTS)
+         ========================================== -->
+    <section id="screen-dashboard" class="screen active">
+      <div class="search-container">
+        <input type="text" id="search-input" class="search-input" placeholder="Buscar acción por nombre o sigla..." oninput="filterStocks()">
+        <button class="btn-icon" onclick="resetSearch()" title="Limpiar filtro">✕</button>
+      </div>
+
+      <!-- Sector Tag (single sector) -->
+      <nav class="filter-tags" id="sector-filters">
+        <button class="tag active" style="cursor: default;">🧠 Tecnología / IA</button>
+      </nav>
+
+      <!-- Stocks List Container -->
+      <div class="card" style="padding: 0; overflow: hidden; border-radius: 12px;">
+        <div id="stocks-list-container">
+          <!-- Populated by JS -->
+        </div>
+      </div>
+    </section>
+
+    <!-- ==========================================
+         SCREEN 2: STOCK DETAIL / TRANSACTION CALCULATOR
+         ========================================== -->
+    <section id="screen-detail" class="screen">
+      <button class="back-btn" onclick="switchScreen('dashboard')">
+        ← Volver al listado
+      </button>
+
+      <article class="detail-header">
+        <div class="detail-title">
+          <div class="symbol-wrap">
+            <h2 id="detail-symbol" class="mono">--</h2>
+            <span id="detail-premium" class="premium-badge" style="display: none;"></span>
+          </div>
+          <p id="detail-name">Escanea una carta para ver el detalle</p>
+        </div>
+        <div class="detail-price-box">
+          <div id="detail-current-price" class="detail-price">$0.00</div>
+          <div id="detail-change-pct" class="change-percent">--</div>
+        </div>
+      </article>
+
+      <!-- Interactive glowing chart canvas -->
+      <div class="chart-container">
+        <div class="live-badge">LIVE</div>
+        <canvas id="detail-chart" class="chart-canvas"></canvas>
+        <div class="chart-timeline">
+          <span>hace 5m</span>
+          <span>hace 2.5m</span>
+          <span>AHORA</span>
+        </div>
+      </div>
+
+      <!-- Quick stats of the selected stock -->
+      <div class="stats-grid">
+          <div class="stat-item">
+          <div class="stat-label">Sector</div>
+          <div class="stat-value" id="stat-sector" style="font-size: 13px;">--</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-label">Precio Inicial</div>
+          <div class="stat-value mono" id="stat-initial">--</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-label">Volatilidad</div>
+          <div class="stat-value mono" id="stat-vol">--</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-label">Tendencia</div>
+          <div class="stat-value" id="stat-trend" style="color: var(--color-green);">--</div>
+        </div>
+      </div>
+
+      <!-- VALUACIÓN DE CARTA INDIVIDUAL -->
+      <div class="card trade-console" style="text-align: center; padding: 22px 18px;">
+        <div style="font-size: 11px; color: var(--color-cyan); font-weight: 700; text-transform: uppercase; margin-bottom: 12px; letter-spacing: 0.05em; display: flex; align-items: center; justify-content: center; gap: 6px;">
+          <span>🔍</span> LECTOR DE CERTIFICADO FÍSICO
+        </div>
+
+        <div style="font-size: 13px; color: var(--color-muted); margin-bottom: 8px;">VALOR OFICIAL DE ESTA CARTA DE ACCIÓN</div>
+        <div id="trade-total-pay" style="font-family: var(--font-mono); font-size: 36px; font-weight: 800; color: var(--color-green); text-shadow: var(--shadow-neon-green); margin-bottom: 12px;">$0.00</div>
+        
+        <p style="font-size: 12px; color: var(--color-muted); line-height: 1.5; background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.04); border-radius: 8px; padding: 10px; margin-bottom: 0;">
+          Esta carta física equivale exactamente a <strong>1 acción completa</strong>. <br>
+          Para venderla o comprarla al banco, cobra o entrega el valor de arriba en billetes físicos.
+        </p>
+
+        <!-- Small utility multi-card calculator for quick trade helper (cleaner, togglable) -->
+        <details style="margin-top: 15px; text-align: left; font-size: 12px; color: var(--color-muted); cursor: pointer;">
+          <summary style="font-size: 11px; color: var(--color-cyan); font-weight: 600; outline: none; margin-bottom: 8px;">
+            🧮 Calcular múltiples cartas a la vez
+          </summary>
+          <div style="display: flex; flex-direction: column; gap: 10px; padding: 10px; background: rgba(13, 20, 38, 0.4); border-radius: 8px; border: 1px solid rgba(255,255,255,0.02); margin-top: 4px;">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <span>Cantidad de Cartas:</span>
+              <div class="quantity-control" style="background: rgba(6, 8, 20, 0.8);">
+                <button class="qty-btn" onclick="changeQty(-1)" style="height: 28px; width: 28px; font-size: 14px;">-</button>
+                <input type="number" id="trade-qty" class="qty-input" value="1" min="1" oninput="validateQty()" style="width: 32px; font-size: 12px;">
+                <button class="qty-btn" onclick="changeQty(1)" style="height: 28px; width: 28px; font-size: 14px;">+</button>
+              </div>
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px dashed rgba(255,255,255,0.05); padding-top: 8px; font-family: var(--font-mono); font-weight: 700;">
+              <span>Valor Total:</span>
+              <span id="trade-total-receive" style="color: var(--color-cyan); font-size: 14px;">$0.00</span>
+            </div>
+          </div>
+        </details>
+      </div>
+    </section>
+
+    <!-- ==========================================
+         SCREEN 3: SCAN QR SCREEN
+         ========================================== -->
+    <section id="screen-scan" class="screen">
+      <div style="margin-bottom: 20px; text-align: center;">
+        <h3 style="font-size: 20px; color: #fff;">📷 Escáner de QR</h3>
+        <p style="font-size: 13px; color: var(--color-muted);">Escanea el código QR de tu carta física para ver la cotización en detalle.</p>
+      </div>
+
+      <div class="card" style="padding: 18px; margin-bottom: 20px; display: flex; flex-direction: column; align-items: center; gap: 14px;">
+        <div id="qr-reader" style="width: 100%; max-width: 440px; min-height: 280px; border-radius: 16px; overflow: hidden; background: #000;"></div>
+        <div id="qr-reader-error" style="font-size: 12px; color: #ff8c8c; min-height: 1.4em; text-align: center;"></div>
+        <button class="btn" style="padding: 12px 20px; background: var(--color-cyan); color: #000; border: none; border-radius: 10px; cursor: pointer;" onclick="toggleCameraActive()">Reiniciar cámara</button>
+        <p style="font-size: 12px; color: var(--color-muted); max-width: 540px; text-align: center;">
+          Si el navegador no pide permiso, revisa la configuración de tu cámara o usa un navegador compatible. El escáner necesita HTTPS o localhost en el navegador.
+        </p>
+      </div>
+    </section>
+
+    <!-- ==========================================
+         SCREEN 4: CENTRAL MONITOR / TV DASHBOARD
+         ========================================== -->
+    <section id="screen-central" class="screen">
+      <div style="margin-bottom: 20px; text-align: center;">
+        <h3 style="font-size: 20px; color: #fff;">📊 Monitor General del Mercado</h3>
+        <p style="font-size: 12px; color: var(--color-muted);">Pon esta pantalla en una tableta o TV en el centro de la mesa para todos los jugadores.</p>
+      </div>
+
+      <!-- Sector Summary List -->
+      <div style="display: flex; flex-direction: column; gap: 10px;" id="tv-sector-grid">
+        <!-- Rendered dynamically -->
+      </div>
+    </section>
+
+    <!-- ==========================================
+         SCREEN 4: MARKET EVENTS & NEWS (PHYSICAL INJECTOR)
+         ========================================== -->
+    <section id="screen-news" class="screen">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <h3 style="font-size: 20px;">Feed de Eventos en Vivo</h3>
+        <div class="live-badge">Sincronizado</div>
+      </div>
+
+      <!-- Physical Event Injector Console -->
+      <div class="card" style="border-color: var(--color-cyan); background: rgba(0, 229, 255, 0.05); margin-bottom: 20px;">
+        <div style="font-size: 12px; color: #fff; font-weight: 700; text-transform: uppercase; margin-bottom: 6px;">🎟️ Inyectar Carta de Evento Física</div>
+        <p style="font-size: 11px; color: var(--color-muted); margin-bottom: 12px;">Ingresa el código numérico de 3 dígitos de la carta física robada para alterar la bolsa en tiempo real.</p>
+        
+        <div class="search-container" style="margin-bottom: 0;">
+          <input type="number" id="event-code-input" class="search-input" placeholder="Ej: 101, 103, 201, 205..." pattern="[0-9]*" inputmode="numeric">
+          <button class="btn" style="padding: 0 20px; font-size: 12px; background: var(--color-cyan); color: #000;" onclick="submitEventCode()">
+            Activar
+          </button>
+        </div>
+      </div>
+
+      <!-- Manual Triggered Custom Events List -->
+      <div id="active-events-wrapper" style="display: none; margin-bottom: 24px;">
+        <h4 style="font-size: 13px; margin-bottom: 8px; color: var(--color-cyan); text-transform: uppercase;">⚠️ Modificadores Activos en la Mesa</h4>
+        <div id="active-events-container">
+          <!-- Active event cards list -->
+        </div>
+      </div>
+
+      <!-- Auto clock cyclical news header -->
+      <div class="card" style="border-color: var(--color-purple); background: rgba(189, 0, 255, 0.04); margin-bottom: 24px;">
+        <div style="font-size: 11px; color: var(--color-muted); text-transform: uppercase; font-weight: 700;">Suceso de Mercado Cíclico</div>
+        <div style="font-weight: 700; margin-top: 6px; font-size: 14px; color: #fff;" id="news-current-title">Escanea una carta para ver noticias</div>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 10px; font-size: 12px;">
+          <span style="color: var(--color-muted);" id="news-time-remaining"></span>
+          <span id="news-current-impact" class="news-impact">--</span>
+        </div>
+      </div>
+
+      <h4 style="font-size: 14px; margin-bottom: 12px; color: var(--color-muted);">Noticias de Archivo</h4>
+      <div class="news-feed" id="news-feed-container">
+        <!-- Loaded by JS -->
+      </div>
+    </section>
+
+    <nav class="bottom-nav">
+      <button class="nav-btn active" id="nav-dashboard" onclick="switchScreen('dashboard')">
+        <span class="icon">📊</span>
+        <span>Mercado</span>
+      </button>
+      <button class="nav-btn" id="nav-scan" onclick="switchScreen('scan')">
+        <span class="icon">📷</span>
+        <span>Escanear</span>
+      </button>
+      <button class="nav-btn" id="nav-central" onclick="switchScreen('central')">
+        <span class="icon">🖥️</span>
+        <span>Mesa TV</span>
+      </button>
+      <button class="nav-btn" id="nav-news" onclick="switchScreen('news')">
+        <span class="icon">📰</span>
+        <span>Noticias</span>
+      </button>
+    </nav>
+
+  </div>
+
+  <script src="market.js"></script>
+  <script>
+    // State management variables
+    let currentScreen = "dashboard";
+    let selectedSymbol = null;
+    let selectedQty = 1;
+    let refreshInterval = null;
+    let chartHistoryPoints = 35;
+    let activeFilterSector = "ALL";
+    let html5QrCode = null; // In-app camera QR reader instance
+
+    // Setup and Initializations
+    window.addEventListener("DOMContentLoaded", () => {
+      loadActiveEvents();
+      
+      // Check query parameter for deep-linking (e.g. market.html?symbol=NVDA)
+      const urlParams = new URLSearchParams(window.location.search);
+      const symbolParam = urlParams.get("symbol");
+      if (symbolParam && STOCKS[symbolParam.toUpperCase()]) {
+        selectedSymbol = symbolParam.toUpperCase();
+        switchScreen("detail");
+      }
+
+      // Populate elements
+      buildStocksList();
+      updateDynamicUI();
+      
+      // Ticker tape populate
+      buildTickerTape();
+
+      // Set live refresh loop (every 10 seconds)
+      refreshInterval = setInterval(() => {
+        updateDynamicUI();
+      }, 10000);
+    });
+
+    // Swapping app screens
+    function switchScreen(screenId) {
+      // Shut down the camera stream if navigating away from Scanner
+      if (currentScreen === "scan" && screenId !== "scan") {
+        stopQRScanner();
+      }
+
+      currentScreen = screenId;
+      document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
+      document.querySelectorAll(".nav-btn").forEach(b => b.classList.remove("active"));
+
+      const targetScreen = document.getElementById(`screen-${screenId}`);
+      if (targetScreen) targetScreen.classList.add("active");
+
+      const navBtn = document.getElementById(`nav-${screenId}`);
+      if (navBtn) navBtn.classList.add("active");
+
+      // Scroll to top
+      window.scrollTo(0,0);
+
+      // Trigger specific screen updates
+      if (screenId === "dashboard") {
+        buildStocksList();
+      } else if (screenId === "news") {
+        renderNewsScreen();
+      } else if (screenId === "detail") {
+        renderDetailScreen();
+      } else if (screenId === "central") {
+        renderCentralTVScreen();
+      } else if (screenId === "scan") {
+        startQRScanner();
+      }
+    }
+
+    // In-App QR Scanning Engine LCs
+    function startQRScanner() {
+      const container = document.getElementById("qr-reader");
+      const errorDiv = document.getElementById("qr-reader-error");
+      if (!container) return;
+
+      errorDiv.innerText = "";
+      
+      if (html5QrCode) {
+        stopQRScanner().then(() => startQRScanner());
+        return;
+      }
+
+      html5QrCode = new Html5Qrcode("qr-reader");
+
+      html5QrCode.start(
+        { facingMode: "environment" }, // Rear phone camera
+        {
+          fps: 10,
+          qrbox: { width: 250, height: 250 }
+        },
+        (decodedText) => {
+          handleScannedText(decodedText);
+        },
+        (errorMessage) => {
+          // Silent log noise to prevent flooding console
+        }
+      ).catch(err => {
+        console.error("Camera access failed:", err);
+        errorDiv.innerText = "Error: Acceso denegado a la cámara. Asegúrate de dar permisos de cámara.";
+      });
+    }
+
+    function stopQRScanner() {
+      if (html5QrCode && html5QrCode.isScanning) {
+        return html5QrCode.stop().then(() => {
+          html5QrCode = null;
+        }).catch(err => {
+          console.error("Error shutting down QR scanner:", err);
+          html5QrCode = null;
+        });
+      }
+      return Promise.resolve();
+    }
+
+    // Restart camera helper
+    function toggleCameraActive() {
+      stopQRScanner().then(() => {
+        startQRScanner();
+      });
+    }
+
+    function handleScannedText(decodedText) {
+      try {
+        // Option A: Full deep-link URL (stable QR)
+        const url = new URL(decodedText);
+        const sym = url.searchParams.get("symbol");
+        if (sym && STOCKS[sym.toUpperCase()]) {
+          const selected = sym.toUpperCase();
+          selectedSymbol = selected;
+          showToast(`¡Carta detectada: ${selected}!`, "success");
+          stopQRScanner().then(() => {
+            switchScreen("detail");
+          });
+        } else {
+          showToast("QR detectado, pero no pertenece a City Venture.", "error");
+        }
+      } catch (e) {
+        // Option B: Just raw symbol letters
+        const cleanCode = decodedText.trim().toUpperCase();
+        if (STOCKS[cleanCode]) {
+          selectedSymbol = cleanCode;
+          showToast(`¡Carta detectada: ${selectedSymbol}!`, "success");
+          stopQRScanner().then(() => {
+            switchScreen("detail");
+          });
+        } else {
+          showToast("QR no reconocido. Escanea un código de carta estable.", "error");
+        }
+      }
+    }
+
+    // Dynamic tickers tape
+    function buildTickerTape() {
+      const wrap = document.getElementById("ticker-wrap-content");
+      if (!wrap) return;
+      
+      wrap.innerHTML = "";
+      if (!selectedSymbol) {
+        return;
+      }
+
+      const now = Date.now();
+      
+      // Repeat list twice to ensure infinite loops smoothly
+      const stockKeys = Object.keys(STOCKS);
+      const doubleKeys = [...stockKeys, ...stockKeys];
+      
+      doubleKeys.forEach(sym => {
+        const stock = STOCKS[sym];
+        const currentPrice = getPriceAtTime(sym, now);
+        const prevPrice = getPriceAtTime(sym, now - 30000); // 30s ago
+        const pct = ((currentPrice - prevPrice) / prevPrice * 100);
+        const up = pct >= 0;
+
+        const div = document.createElement("div");
+        div.className = "ticker-item";
+        div.onclick = () => { selectedSymbol = sym; switchScreen("detail"); };
+        div.style.cursor = "pointer";
+        div.innerHTML = `
+          <span class="symbol">${sym}</span>
+          <span class="price ${up ? 'up' : 'down'}">$${currentPrice.toFixed(2)}</span>
+          <span class="change ${up ? 'up' : 'down'}">${up ? '▲' : '▼'}${Math.abs(pct).toFixed(1)}%</span>
+        `;
+        wrap.appendChild(div);
+      });
+    }
+
+    // Dynamic Stocks List Screen
+    function buildStocksList() {
+      const container = document.getElementById("stocks-list-container");
+      if (!container) return;
+
+      container.innerHTML = "";
+      if (!selectedSymbol) {
+        container.innerHTML = `
+          <div class="empty-state" style="padding: 40px; text-align: center; color: var(--color-muted);">
+            Escanea una carta en la pantalla <strong>Escanear</strong> para activar el mercado y ver las cotizaciones.
+          </div>
+        `;
+        return;
+      }
+
+      const now = Date.now();
+      const query = document.getElementById("search-input").value.toLowerCase().trim();
+
+      Object.keys(STOCKS).forEach(sym => {
+        const stock = STOCKS[sym];
+        
+        // Apply filters
+        if (activeFilterSector !== "ALL" && stock.sector !== activeFilterSector) return;
+        if (query && !sym.toLowerCase().includes(query) && !stock.name.toLowerCase().includes(query)) return;
+
+        const currentPrice = getPriceAtTime(sym, now);
+        const prevPrice = getPriceAtTime(sym, now - 60000); // 1 minute ago
+        const pct = ((currentPrice - prevPrice) / prevPrice * 100);
+        const up = pct >= 0;
+
+        const item = document.createElement("div");
+        item.className = "stock-list-item";
+        item.onclick = () => {
+          selectedSymbol = sym;
+          switchScreen("detail");
+        };
+
+        item.innerHTML = `
+          <div class="stock-info">
+            <span class="symbol">${sym}</span>
+            <span class="name">${stock.name}</span>
+          </div>
+          <div class="stock-pricing">
+            <span class="price mono">$${currentPrice.toFixed(2)}</span>
+            <span class="change-percent ${up ? 'up' : 'down'}">${up ? '+' : ''}${pct.toFixed(2)}%</span>
+          </div>
+        `;
+        container.appendChild(item);
+      });
+    }
+
+    // Toggling filters (single sector, kept for compatibility)
+    function filterSector(sector) {
+      activeFilterSector = "ALL";
+      buildStocksList();
+    }
+
+    function filterStocks() {
+      buildStocksList();
+    }
+
+    // Clear search filter
+    function resetSearch() {
+      document.getElementById("search-input").value = "";
+      buildStocksList();
+    }
+
+    // Dynamic updates
+    function updateDynamicUI() {
+      const now = Date.now();
+      
+      // Refresh screens
+      if (currentScreen === "dashboard") {
+        buildStocksList();
+      } else if (currentScreen === "detail") {
+        renderDetailScreen();
+      } else if (currentScreen === "news") {
+        renderNewsScreen();
+      } else if (currentScreen === "central") {
+        renderCentralTVScreen();
+      }
+      
+      // Re-trigger ticker tape infrequently
+      if (Math.random() < 0.1) {
+        buildTickerTape();
+      }
+    }
+
+    // Detail Screen updates (acts as Transaction Calculator)
+    function renderDetailScreen() {
+      const sym = selectedSymbol;
+      const stock = STOCKS[sym];
+      if (!stock) {
+        document.getElementById("detail-symbol").innerText = "--";
+        document.getElementById("detail-name").innerText = "Escanea una carta para ver el detalle";
+        document.getElementById("detail-current-price").innerText = "$0.00";
+        const pctEl = document.getElementById("detail-change-pct");
+        pctEl.innerText = "--";
+        pctEl.className = "change-percent";
+
+        document.getElementById("stat-sector").innerText = "--";
+        document.getElementById("stat-initial").innerText = "--";
+        document.getElementById("stat-vol").innerText = "--";
+        const trendEl = document.getElementById("stat-trend");
+        trendEl.innerText = "--";
+        trendEl.style.color = "var(--color-green)";
+
+        document.getElementById("detail-premium").style.display = "none";
+        document.getElementById("trade-total-pay").innerText = "$0.00";
+        document.getElementById("trade-total-receive").innerText = "$0.00";
+        return;
+      }
+
+      const now = Date.now();
+      const currentPrice = getPriceAtTime(sym, now);
+      const history = getStockHistory(sym, now, chartHistoryPoints, 10000); // 10s intervals
+      const startPrice = history[0].price;
+      const pct = ((currentPrice - startPrice) / startPrice * 100);
+      const up = pct >= 0;
+
+      // Populate DOM elements
+      document.getElementById("detail-symbol").innerText = sym;
+      document.getElementById("detail-name").innerText = stock.name;
+      document.getElementById("detail-current-price").innerText = `$${currentPrice.toFixed(2)}`;
+      
+      const pctEl = document.getElementById("detail-change-pct");
+      pctEl.innerText = `${up ? '+' : ''}${pct.toFixed(2)}%`;
+      pctEl.className = `change-percent ${up ? 'up' : 'down'}`;
+
+      // Stats
+      document.getElementById("stat-sector").innerText = stock.sector;
+      document.getElementById("stat-initial").innerText = `$${stock.initialPrice.toFixed(2)}`;
+      document.getElementById("stat-vol").innerText = `${Math.round(stock.volatility * 100)}%`;
+      
+      const trendEl = document.getElementById("stat-trend");
+      trendEl.innerText = pct > 2 ? "Alcista" : (pct < -2 ? "Bajista" : "Estable");
+      trendEl.style.color = pct > 2 ? "var(--color-green)" : (pct < -2 ? "var(--color-red)" : "var(--color-cyan)");
+
+      // Show/Hide Legendary Badge
+      document.getElementById("detail-premium").style.display = stock.premium ? "inline-block" : "none";
+
+      // Quantity Cost Calculation
+      validateQty();
+
+      // Re-draw chart on canvas
+      drawStockChart("detail-chart", history, sym);
+    }
+
+    // Quantity validation and cost computation
+    function changeQty(amount) {
+      const input = document.getElementById("trade-qty");
+      let val = parseInt(input.value) + amount;
+      if (isNaN(val) || val < 1) val = 1;
+      input.value = val;
+      validateQty();
+    }
+
+    function validateQty() {
+      const input = document.getElementById("trade-qty");
+      let val = parseInt(input.value);
+      if (isNaN(val) || val < 1) {
+        val = 1;
+        input.value = 1;
+      }
+      
+      const now = Date.now();
+      const currentPrice = selectedSymbol ? getPriceAtTime(selectedSymbol, now) : 0;
+      const total = val * currentPrice;
+      
+      // Update single-card main value display
+      document.getElementById("trade-total-pay").innerText = `$${currentPrice.toFixed(2)}`;
+      // Update multi-card sub-calculator total
+      document.getElementById("trade-total-receive").innerText = `$${total.toLocaleString('es-ES', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+    }
+
+    // Event Ingestion Logic
+    function submitEventCode() {
+      const input = document.getElementById("event-code-input");
+      const code = input.value.trim();
+      
+      if (!code) return;
+
+      const res = injectEventCode(code);
+      if (res.success) {
+        showToast(`¡EVENTO ACTIVADO: ${res.event.title}!`, "success");
+        input.value = "";
+        switchScreen("news");
+      } else {
+        showToast(res.msg, "error");
+      }
+    }
+
+    // News Screen updates (with injected active physical modifiers countdowns)
+    function renderNewsScreen() {
+      const now = Date.now();
+      const titleEl = document.getElementById("news-current-title");
+      const impactEl = document.getElementById("news-current-impact");
+      const remainingEl = document.getElementById("news-time-remaining");
+      const wrapper = document.getElementById("active-events-wrapper");
+      const activeContainer = document.getElementById("active-events-container");
+      const feed = document.getElementById("news-feed-container");
+
+      if (!selectedSymbol) {
+        titleEl.innerText = "Escanea una carta para activar las noticias del mercado";
+        impactEl.innerText = "--";
+        impactEl.className = "news-impact";
+        remainingEl.innerText = "";
+        wrapper.style.display = "none";
+        if (feed) {
+          feed.innerHTML = `
+            <div class="empty-state" style="padding: 24px; text-align: center; color: var(--color-muted);">
+              Las noticias se mostrarán después de escanear una carta y activar el mercado.
+            </div>
+          `;
+        }
+        return;
+      }
+
+      const currentNews = getActiveNewsAtTime(now);
+      
+      // Update news title
+      titleEl.innerText = currentNews.title;
+      
+      const up = currentNews.impact >= 0;
+      impactEl.innerText = `${up ? '+' : ''}${Math.round(currentNews.impact * 100)}% en ${currentNews.sector}`;
+      impactEl.className = `news-impact ${up ? 'up' : 'down'}`;
+
+      // Time countdown remaining in active news (10m slot)
+      const duration = 10 * 60 * 1000;
+      const timeElapsed = now - currentNews.startTime;
+      const remainingMs = Math.max(0, duration - timeElapsed);
+      const minutes = Math.floor(remainingMs / 60000);
+      const seconds = Math.floor((remainingMs % 60000) / 1000);
+      remainingEl.innerText = `Restan: ${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+
+      // Active Injected physical events listing
+      const activeList = getActiveEventsList(now);
+      
+
+      if (activeList.length > 0) {
+        wrapper.style.display = "block";
+        activeContainer.innerHTML = "";
+        
+        activeList.forEach(evt => {
+          const remain = Math.max(0, evt.endTime - now);
+          const min = Math.floor(remain / 60000);
+          const sec = Math.floor((remain % 60000) / 1000);
+          const evtUp = evt.impact >= 0;
+
+          const item = document.createElement("div");
+          item.className = "card";
+          item.style.padding = "12px 14px";
+          item.style.borderColor = evtUp ? "var(--color-green)" : "var(--color-red)";
+          item.style.background = evtUp ? "rgba(0,255,135,0.03)" : "rgba(255,56,96,0.03)";
+          item.style.marginBottom = "8px";
+          
+          item.innerHTML = `
+            <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+              <div>
+                <strong style="font-size:13px; color:#fff; display:block;">${evt.title}</strong>
+                <span style="font-size:10px; color:var(--color-muted); display:block; margin-top:2px;">${evt.desc}</span>
+              </div>
+              <span class="change-percent ${evtUp ? 'up' : 'down'}" style="font-size:10px; white-space:nowrap;">
+                ${evtUp ? '▲' : '▼'} ${Math.abs(evt.impact*100)}%
+              </span>
+            </div>
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-top:10px; font-size:10px; font-family:var(--font-mono); color:var(--color-muted);">
+              <span>CÓDIGO: #${evt.code}</span>
+              <span style="color:#fff;">Restan: ${min}:${sec.toString().padStart(2,'0')}</span>
+            </div>
+          `;
+          activeContainer.appendChild(item);
+        });
+      } else {
+        wrapper.style.display = "none";
+      }
+
+      // Past historical automatic news feed
+      if (!feed) return;
+
+      feed.innerHTML = "";
+
+      for (let i = 1; i <= 5; i++) {
+        // Previous news slots of 10 minutes ago
+        const pastTime = now - i * (10 * 60 * 1000);
+        const pastNews = getActiveNewsAtTime(pastTime);
+        const dateObj = new Date(pastTime);
+        const timeStr = `${dateObj.getHours().toString().padStart(2, '0')}:${dateObj.getMinutes().toString().padStart(2, '0')}`;
+
+        const isUp = pastNews.impact >= 0;
+
+        const item = document.createElement("div");
+        item.className = `news-item ${isUp ? 'impact-up' : 'impact-down'}`;
+        item.innerHTML = `
+          <div class="news-time">${timeStr} [SECTOR: ${pastNews.sector}]</div>
+          <div class="news-title">${pastNews.title}</div>
+          <div class="news-impact ${isUp ? 'up' : 'down'}">${isUp ? '+' : ''}${Math.round(pastNews.impact * 100)}% de impacto máximo</div>
+        `;
+        feed.appendChild(item);
+      }
+    }
+
+    // Dynamic Central TV / Mesa dashboard updates
+    function renderCentralTVScreen() {
+      const now = Date.now();
+      const container = document.getElementById("tv-sector-grid");
+      if (!container) return;
+
+      container.innerHTML = "";
+      if (!selectedSymbol) {
+        container.innerHTML = `
+          <div class="empty-state" style="padding: 40px; text-align: center; color: var(--color-muted); border: 1px dashed rgba(255,255,255,0.12); border-radius: 16px;">
+            Escanea una carta en la pantalla <strong>Escanear</strong> para activar la Mesa TV.
+          </div>
+        `;
+        return;
+      }
+
+      // Render all stocks (single sector)
+      const card = document.createElement("div");
+      card.className = "card";
+      card.style.padding = "14px";
+      card.style.background = "rgba(10, 15, 30, 0.5)";
+      
+      let stocksHtml = "";
+      Object.keys(STOCKS).forEach(sym => {
+        const stock = STOCKS[sym];
+        const currentPrice = getPriceAtTime(sym, now);
+        const prevPrice = getPriceAtTime(sym, now - 60000); // 1m ago
+        const pct = ((currentPrice - prevPrice) / prevPrice * 100);
+        const isUp = pct >= 0;
+
+        stocksHtml += `
+          <div style="display:flex; justify-content:space-between; align-items:center; padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.03); cursor:pointer;" onclick="selectedSymbol='${sym}'; switchScreen('detail');">
+            <div style="display:flex; flex-direction:column; gap:2px;">
+              <span class="mono" style="font-weight:700; color:#fff; font-size:14px;">${sym}</span>
+              <span style="font-size:11px; color:var(--color-muted);">${stock.name}</span>
+            </div>
+            <div style="display:flex; gap:12px; align-items:center; font-family:var(--font-mono);">
+              <span style="font-size:14px; color:#fff; font-weight:600;">$${currentPrice.toFixed(2)}</span>
+              <span class="${isUp ? 'price up' : 'price down'}" style="font-size:11px; font-weight:700;">${isUp ? '▲' : '▼'}${Math.abs(pct).toFixed(1)}%</span>
+            </div>
+          </div>
+        `;
+      });
+
+      card.innerHTML = `
+        <div style="font-size:11px; font-weight:800; color:var(--color-cyan); text-transform:uppercase; margin-bottom:8px; border-bottom:1px solid rgba(0,229,255,0.1); padding-bottom:4px;">
+          🧠 Sector: Tecnología / IA
+        </div>
+        <div style="display:flex; flex-direction:column;">
+          ${stocksHtml}
+        </div>
+      `;
+      container.appendChild(card);
+    }
+
+    // Toast notifications
+    function showToast(message, type = "success") {
+      const toast = document.getElementById("toast-notification");
+      if (!toast) return;
+
+      toast.innerText = message;
+      toast.className = `toast show ${type}`;
+
+      setTimeout(() => {
+        toast.classList.remove("show");
+      }, 3000);
+    }
+
+  </script>
+
+</body>
+</html>

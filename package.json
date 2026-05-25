@@ -1,0 +1,17 @@
+{
+  "name": "city-venture-mercado-activo",
+  "version": "1.0.0",
+  "description": "Simulador de mercado de valores interactivo y oráculo de cotizaciones físico para City Venture.",
+  "main": "index.html",
+  "scripts": {
+    "start": "npx serve . -l 5000",
+    "download-qrs": "node download_qrs.js"
+  },
+  "keywords": [
+    "city-venture",
+    "boardgame",
+    "stock-market"
+  ],
+  "author": "",
+  "license": "ISC"
+}
