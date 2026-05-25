@@ -214,17 +214,7 @@
         </div>
       </div>
 
-      <!-- Auto clock cyclical news header -->
-      <div class="card" style="border-color: var(--color-purple); background: rgba(189, 0, 255, 0.04); margin-bottom: 24px;">
-        <div style="font-size: 11px; color: var(--color-muted); text-transform: uppercase; font-weight: 700;">Suceso de Mercado Cíclico</div>
-        <div style="font-weight: 700; margin-top: 6px; font-size: 14px; color: #fff;" id="news-current-title">Escanea una carta para ver noticias</div>
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 10px; font-size: 12px;">
-          <span style="color: var(--color-muted);" id="news-time-remaining"></span>
-          <span id="news-current-impact" class="news-impact">--</span>
-        </div>
-      </div>
-
-      <h4 style="font-size: 14px; margin-bottom: 12px; color: var(--color-muted);">Noticias de Archivo</h4>
+      <h4 style="font-size: 14px; margin-bottom: 12px; color: var(--color-cyan); text-transform: uppercase;">📜 Historial de Eventos Jugados</h4>
       <div class="news-feed" id="news-feed-container">
         <!-- Loaded by JS -->
       </div>
@@ -257,11 +247,29 @@
     let currentScreen = "dashboard";
     let selectedSymbol = null;
     let unlockedStocks = [];
+    let eventHistory = [];
     let selectedQty = 1;
     let refreshInterval = null;
     let chartHistoryPoints = 35;
     let activeFilterSector = "ALL";
     let html5QrCode = null; // In-app camera QR reader instance
+
+    function loadEventHistory() {
+      const stored = localStorage.getItem("city_venture_event_history");
+      if (stored) {
+        try {
+          eventHistory = JSON.parse(stored);
+        } catch (e) {
+          eventHistory = [];
+        }
+      } else {
+        eventHistory = [];
+      }
+    }
+
+    function saveEventHistory() {
+      localStorage.setItem("city_venture_event_history", JSON.stringify(eventHistory));
+    }
 
     function loadUnlockedStocks() {
       const stored = localStorage.getItem("city_venture_unlocked_stocks");
@@ -296,6 +304,8 @@
       if (confirm("¿Estás seguro de que deseas reiniciar la partida? Esto borrará todas las acciones desbloqueadas y eventos activos.")) {
         unlockedStocks = [];
         saveUnlockedStocks();
+        eventHistory = [];
+        saveEventHistory();
         clearAllActiveEvents();
         selectedSymbol = null;
         showToast("Partida reiniciada. El mercado está en blanco de nuevo.", "success");
@@ -311,6 +321,7 @@
     window.addEventListener("DOMContentLoaded", () => {
       loadActiveEvents();
       loadUnlockedStocks();
+      loadEventHistory();
       
       // Check query parameter for deep-linking (e.g. market.html?symbol=NVDA)
       const urlParams = new URLSearchParams(window.location.search);
@@ -673,6 +684,13 @@
       const res = injectEventCode(code);
       if (res.success) {
         showToast(`¡EVENTO ACTIVADO: ${res.event.title}!`, "success");
+        // Registrar en el historial de eventos
+        eventHistory.unshift({
+          code: code,
+          timestamp: Date.now()
+        });
+        saveEventHistory();
+
         input.value = "";
         switchScreen("news");
       } else {
@@ -683,49 +701,24 @@
     // News Screen updates (with injected active physical modifiers countdowns)
     function renderNewsScreen() {
       const now = Date.now();
-      const titleEl = document.getElementById("news-current-title");
-      const impactEl = document.getElementById("news-current-impact");
-      const remainingEl = document.getElementById("news-time-remaining");
       const wrapper = document.getElementById("active-events-wrapper");
       const activeContainer = document.getElementById("active-events-container");
       const feed = document.getElementById("news-feed-container");
 
       if (unlockedStocks.length === 0) {
-        titleEl.innerText = "Esperando la primera acción en el mercado";
-        impactEl.innerText = "--";
-        impactEl.className = "news-impact";
-        remainingEl.innerText = "";
         wrapper.style.display = "none";
         if (feed) {
           feed.innerHTML = `
             <div class="empty-state" style="padding: 24px; text-align: center; color: var(--color-muted);">
-              Las noticias del mercado aparecerán después de que desbloquees la primera acción.
+              Las noticias aparecerán después de que desbloquees la primera acción del mercado.
             </div>
           `;
         }
         return;
       }
 
-      const currentNews = getActiveNewsAtTime(now);
-      
-      // Update news title
-      titleEl.innerText = currentNews.title;
-      
-      const up = currentNews.impact >= 0;
-      impactEl.innerText = `${up ? '+' : ''}${Math.round(currentNews.impact * 100)}% en ${currentNews.sector}`;
-      impactEl.className = `news-impact ${up ? 'up' : 'down'}`;
-
-      // Time countdown remaining in active news (10m slot)
-      const duration = 10 * 60 * 1000;
-      const timeElapsed = now - currentNews.startTime;
-      const remainingMs = Math.max(0, duration - timeElapsed);
-      const minutes = Math.floor(remainingMs / 60000);
-      const seconds = Math.floor((remainingMs % 60000) / 1000);
-      remainingEl.innerText = `Restan: ${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-
       // Active Injected physical events listing
       const activeList = getActiveEventsList(now);
-      
 
       if (activeList.length > 0) {
         wrapper.style.display = "block";
@@ -765,29 +758,40 @@
         wrapper.style.display = "none";
       }
 
-      // Past historical automatic news feed
+      // Past historical custom event feed (scanned cards log)
       if (!feed) return;
 
       feed.innerHTML = "";
 
-      for (let i = 1; i <= 5; i++) {
-        // Previous news slots of 10 minutes ago
-        const pastTime = now - i * (10 * 60 * 1000);
-        const pastNews = getActiveNewsAtTime(pastTime);
-        const dateObj = new Date(pastTime);
-        const timeStr = `${dateObj.getHours().toString().padStart(2, '0')}:${dateObj.getMinutes().toString().padStart(2, '0')}`;
-
-        const isUp = pastNews.impact >= 0;
-
-        const item = document.createElement("div");
-        item.className = `news-item ${isUp ? 'impact-up' : 'impact-down'}`;
-        item.innerHTML = `
-          <div class="news-time">${timeStr} [SECTOR: ${pastNews.sector}]</div>
-          <div class="news-title">${pastNews.title}</div>
-          <div class="news-impact ${isUp ? 'up' : 'down'}">${isUp ? '+' : ''}${Math.round(pastNews.impact * 100)}% de impacto máximo</div>
+      if (eventHistory.length === 0) {
+        feed.innerHTML = `
+          <div class="empty-state" style="padding: 24px; text-align: center; color: var(--color-muted); border: 1px dashed rgba(255,255,255,0.05); border-radius: 8px;">
+            Aún no se han inyectado cartas de eventos físicos en esta partida.
+          </div>
         `;
-        feed.appendChild(item);
+        return;
       }
+
+      eventHistory.forEach(item => {
+        const evt = PHYSICAL_EVENTS[item.code];
+        if (!evt) return;
+
+        const dateObj = new Date(item.timestamp);
+        const timeStr = `${dateObj.getHours().toString().padStart(2, '0')}:${dateObj.getMinutes().toString().padStart(2, '0')}`;
+        const isUp = evt.impact >= 0;
+
+        const el = document.createElement("div");
+        el.className = `news-item ${isUp ? 'impact-up' : 'impact-down'}`;
+        el.innerHTML = `
+          <div class="news-time">${timeStr} [CÓDIGO DE EVENTO: #${item.code}]</div>
+          <div class="news-title" style="font-weight: 700; color: #fff;">${evt.title}</div>
+          <div style="font-size: 11px; color: var(--color-muted); margin-top: 3px; line-height: 1.4;">${evt.desc}</div>
+          <div class="news-impact ${isUp ? 'up' : 'down'}" style="margin-top: 6px; font-size: 11px; font-weight: 700;">
+            ${isUp ? '▲' : '▼'} ${isUp ? '+' : ''}${Math.round(evt.impact * 100)}% de impacto
+          </div>
+        `;
+        feed.appendChild(el);
+      });
     }
 
     // Dynamic Central TV / Mesa dashboard updates

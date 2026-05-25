@@ -144,23 +144,8 @@ function getActiveNewsAtTime(timestampMs) {
   };
 }
 
-// Calculate the smooth news impact multiplier on a specific sector at a given time
-function getNewsImpactAtTime(sector, timestampMs) {
-  const currentNews = getActiveNewsAtTime(timestampMs);
-  let impact = 0;
-  
-  if (currentNews.sector === sector) {
-    const timeElapsed = timestampMs - currentNews.startTime;
-    const duration = 10 * 60 * 1000;
-    // Uses a sine wave shape to make the news effect swell and fade smoothly
-    const factor = Math.sin((timeElapsed / duration) * Math.PI);
-    impact = currentNews.impact * factor;
-  }
-  
-  return impact;
-}
-
 // Core price simulator: 100% deterministic based on symbol and exact timestamp (accurate to 10s steps)
+// Prices are only affected by physical event card injections, NOT by automatic cyclical news.
 function getPriceAtTime(symbol, timestampMs) {
   const stock = STOCKS[symbol];
   if (!stock) return 0;
@@ -189,11 +174,8 @@ function getPriceAtTime(symbol, timestampMs) {
 
   // 4. Combine deterministic components
   let calculatedPrice = basePrice * (1 + driftTerm + macroTrend * vol + microNoise * vol * 0.25);
-  
-  // 5. Apply news impact
-  const newsImpact = getNewsImpactAtTime(stock.sector, timestampMs);
 
-  // 6. Apply manual custom active physical injected events!
+  // 5. Apply manual custom active physical injected events only!
   let customImpact = 0;
   const activeEvts = getActiveEventsList(timestampMs);
   activeEvts.forEach(evt => {
@@ -205,8 +187,8 @@ function getPriceAtTime(symbol, timestampMs) {
     }
   });
 
-  // Calculate final price factoring in all dynamic triggers
-  calculatedPrice = calculatedPrice * (1 + newsImpact + customImpact);
+  // Calculate final price factoring in physical event triggers only
+  calculatedPrice = calculatedPrice * (1 + customImpact);
 
   const minPrice = 1.00;
   return Math.max(minPrice, parseFloat(calculatedPrice.toFixed(2)));
@@ -225,7 +207,6 @@ function getStockHistory(symbol, currentTimestampMs, pointsCount = 30, intervalM
   return history;
 }
 
-// ==========================================
 // RENDERING DYNAMIC LINE CHARTS ON CANVAS
 // ==========================================
 function drawStockChart(canvasId, historyData, symbol) {
