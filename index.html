@@ -404,10 +404,6 @@
       if (!wrap) return;
       
       wrap.innerHTML = "";
-      if (!selectedSymbol) {
-        return;
-      }
-
       const now = Date.now();
       
       // Repeat list twice to ensure infinite loops smoothly
@@ -440,15 +436,6 @@
       if (!container) return;
 
       container.innerHTML = "";
-      if (!selectedSymbol) {
-        container.innerHTML = `
-          <div class="empty-state" style="padding: 40px; text-align: center; color: var(--color-muted);">
-            Escanea una carta en la pantalla <strong>Escanear</strong> para activar el mercado y ver las cotizaciones.
-          </div>
-        `;
-        return;
-      }
-
       const now = Date.now();
       const query = document.getElementById("search-input").value.toLowerCase().trim();
 
@@ -636,22 +623,6 @@
       const activeContainer = document.getElementById("active-events-container");
       const feed = document.getElementById("news-feed-container");
 
-      if (!selectedSymbol) {
-        titleEl.innerText = "Escanea una carta para activar las noticias del mercado";
-        impactEl.innerText = "--";
-        impactEl.className = "news-impact";
-        remainingEl.innerText = "";
-        wrapper.style.display = "none";
-        if (feed) {
-          feed.innerHTML = `
-            <div class="empty-state" style="padding: 24px; text-align: center; color: var(--color-muted);">
-              Las noticias se mostrarán después de escanear una carta y activar el mercado.
-            </div>
-          `;
-        }
-        return;
-      }
-
       const currentNews = getActiveNewsAtTime(now);
       
       // Update news title
@@ -743,15 +714,6 @@
       if (!container) return;
 
       container.innerHTML = "";
-      if (!selectedSymbol) {
-        container.innerHTML = `
-          <div class="empty-state" style="padding: 40px; text-align: center; color: var(--color-muted); border: 1px dashed rgba(255,255,255,0.12); border-radius: 16px;">
-            Escanea una carta en la pantalla <strong>Escanear</strong> para activar la Mesa TV.
-          </div>
-        `;
-        return;
-      }
-
       // Render all stocks (single sector)
       const card = document.createElement("div");
       card.className = "card";
