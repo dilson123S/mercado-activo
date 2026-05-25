@@ -34,20 +34,20 @@ const NEWS_TEMPLATES = [
 // Códigos 1xx = SUBIDA (+), Códigos 2xx = BAJADA (-)
 const PHYSICAL_EVENTS = {
   // 🔺 CARTAS DE SUBIDA
-  "101": { title: "¡Burbuja de Inteligencia Artificial!", sector: "Tecnología / IA", impact: 0.30, duration: 10 * 60 * 1000, desc: "La euforia por la IA dispara todas las cotizaciones un +30% por 10 minutos." },
-  "102": { title: "¡Nuevo Avance en Computación Cuántica!", sector: "Tecnología / IA", impact: 0.35, duration: 10 * 60 * 1000, desc: "Un descubrimiento cuántico histórico impulsa el sector un +35% por 10 minutos." },
-  "103": { title: "¡Revolución en Microprocesadores de Nueva Generación!", sector: "Tecnología / IA", impact: 0.40, duration: 10 * 60 * 1000, desc: "Los nuevos chips rompen récords mundiales. Las acciones suben un +40% por 10 minutos." },
-  "104": { title: "¡Aprobación Global de Implantes Neuronales!", sector: "Tecnología / IA", impact: 0.25, duration: 10 * 60 * 1000, desc: "La tecnología neuronal obtiene aprobación mundial. Alza de +25% por 10 minutos." },
-  "105": { title: "¡Contrato Gubernamental Billonario para el Sector Tech!", sector: "Tecnología / IA", impact: 0.30, duration: 10 * 60 * 1000, desc: "Un megacontrato gubernamental inyecta confianza. Subida de +30% por 10 minutos." },
-  "106": { title: "¡La IA Supera al Humano en Investigación Científica!", sector: "Tecnología / IA", impact: 0.35, duration: 10 * 60 * 1000, desc: "La IA logra un hito científico sin precedentes. Impulso de +35% por 10 minutos." },
-  "107": { title: "¡Boom de Demanda Global en Centros de Datos!", sector: "Tecnología / IA", impact: 0.45, duration: 10 * 60 * 1000, desc: "La demanda de infraestructura tech explota globalmente. Subida masiva de +45% por 10 minutos." },
+  "101": { title: "¡Burbuja de Inteligencia Artificial!", sector: "Tecnología / IA", impact: 0.30, desc: "La euforia por la IA dispara todas las cotizaciones un +30%." },
+  "102": { title: "¡Nuevo Avance en Computación Cuántica!", sector: "Tecnología / IA", impact: 0.35, desc: "Un descubrimiento cuántico histórico impulsa el sector un +35%." },
+  "103": { title: "¡Revolución en Microprocesadores de Nueva Generación!", sector: "Tecnología / IA", impact: 0.40, desc: "Los nuevos chips rompen récords mundiales. Las acciones suben un +40%." },
+  "104": { title: "¡Aprobación Global de Implantes Neuronales!", sector: "Tecnología / IA", impact: 0.25, desc: "La tecnología neuronal obtiene aprobación mundial. Alza de +25%." },
+  "105": { title: "¡Contrato Gubernamental Billonario para el Sector Tech!", sector: "Tecnología / IA", impact: 0.30, desc: "Un megacontrato gubernamental inyecta confianza. Subida de +30%." },
+  "106": { title: "¡La IA Supera al Humano en Investigación Científica!", sector: "Tecnología / IA", impact: 0.35, desc: "La IA logra un hito científico sin precedentes. Impulso de +35%." },
+  "107": { title: "¡Boom de Demanda Global en Centros de Datos!", sector: "Tecnología / IA", impact: 0.45, desc: "La demanda de infraestructura tech explota globalmente. Subida masiva de +45%." },
   // 🔻 CARTAS DE BAJADA
-  "201": { title: "¡Fallo Cuántico Global!", sector: "Tecnología / IA", impact: -0.25, duration: 10 * 60 * 1000, desc: "Un error cuántico en cadena destruye sistemas críticos. Caída de -25% por 10 minutos." },
-  "202": { title: "¡Escasez Mundial de Semiconductores!", sector: "Tecnología / IA", impact: -0.30, duration: 10 * 60 * 1000, desc: "Las fábricas de chips se detienen por falta de materiales. Desplome de -30% por 10 minutos." },
-  "203": { title: "¡Ciberataque Masivo a la Infraestructura Tech!", sector: "Tecnología / IA", impact: -0.35, duration: 10 * 60 * 1000, desc: "Hackers comprometen los servidores centrales del sector. Colapso de -35% por 10 minutos." },
-  "204": { title: "¡Nueva Ley Prohíbe el Desarrollo de IA Autónoma!", sector: "Tecnología / IA", impact: -0.20, duration: 10 * 60 * 1000, desc: "Una ley drástica frena la innovación en IA. Caída de -20% por 10 minutos." },
-  "205": { title: "¡Escándalo: La IA Presenta Fallas Críticas de Seguridad!", sector: "Tecnología / IA", impact: -0.40, duration: 10 * 60 * 1000, desc: "Un escándalo de seguridad sacude la confianza en la IA. Desplome de -40% por 10 minutos." },
-  "206": { title: "¡Apagón Global en los Centros de Datos!", sector: "Tecnología / IA", impact: -0.25, duration: 10 * 60 * 1000, desc: "Los data centers del mundo se apagan en cadena. Caída de -25% por 10 minutos." }
+  "201": { title: "¡Fallo Cuántico Global!", sector: "Tecnología / IA", impact: -0.25, desc: "Un error cuántico en cadena destruye sistemas críticos. Caída de -25%." },
+  "202": { title: "¡Escasez Mundial de Semiconductores!", sector: "Tecnología / IA", impact: -0.30, desc: "Las fábricas de chips se detienen por falta de materiales. Desplome de -30%." },
+  "203": { title: "¡Ciberataque Masivo a la Infraestructura Tech!", sector: "Tecnología / IA", impact: -0.35, desc: "Hackers comprometen los servidores centrales del sector. Colapso de -35%." },
+  "204": { title: "¡Nueva Ley Prohíbe el Desarrollo de IA Autónoma!", sector: "Tecnología / IA", impact: -0.20, desc: "Una ley drástica frena la innovación en IA. Caída de -20%." },
+  "205": { title: "¡Escándalo: La IA Presenta Fallas Críticas de Seguridad!", sector: "Tecnología / IA", impact: -0.40, desc: "Un escándalo de seguridad sacude la confianza en la IA. Desplome de -40%." },
+  "206": { title: "¡Apagón Global en los Centros de Datos!", sector: "Tecnología / IA", impact: -0.25, desc: "Los data centers del mundo se apagan en cadena. Caída de -25%." }
 };
 
 // Local storage active injected events state
@@ -81,29 +81,26 @@ function injectEventCode(code) {
 function getActiveEventsList(timestampMs) {
   loadActiveEvents();
   const list = [];
-  let updated = false;
 
   for (const code in activeEvents) {
     const startTime = activeEvents[code];
-    const event = PHYSICAL_EVENTS[code];
-    if (event && (timestampMs - startTime < event.duration)) {
-      list.push({
-        code: code,
-        title: event.title,
-        sector: event.sector,
-        impact: event.impact,
-        startTime: startTime,
-        endTime: startTime + event.duration,
-        desc: event.desc
-      });
-    } else {
-      delete activeEvents[code];
-      updated = true;
+    if (startTime <= timestampMs) {
+      const event = PHYSICAL_EVENTS[code];
+      if (event) {
+        list.push({
+          code: code,
+          title: event.title,
+          sector: event.sector,
+          impact: event.impact,
+          startTime: startTime,
+          desc: event.desc
+        });
+      }
     }
   }
 
-  if (updated) saveActiveEvents();
-  return list;
+  // Ordenar de forma descendente para mostrar el más reciente arriba
+  return list.sort((a, b) => b.startTime - a.startTime);
 }
 
 function clearAllActiveEvents() {
@@ -176,19 +173,17 @@ function getPriceAtTime(symbol, timestampMs) {
   let calculatedPrice = basePrice * (1 + driftTerm + macroTrend * vol + microNoise * vol * 0.25);
 
   // 5. Apply manual custom active physical injected events only!
-  let customImpact = 0;
+  let multiplier = 1.0;
   const activeEvts = getActiveEventsList(timestampMs);
   activeEvts.forEach(evt => {
     if (evt.sector === stock.sector) {
-      const elapsed = timestampMs - evt.startTime;
-      const duration = evt.endTime - evt.startTime;
-      const factor = Math.sin((elapsed / duration) * Math.PI); // Smooth curve
-      customImpact += evt.impact * factor;
+      // Apply the impact multiplicatively and permanently
+      multiplier *= (1 + evt.impact);
     }
   });
 
   // Calculate final price factoring in physical event triggers only
-  calculatedPrice = calculatedPrice * (1 + customImpact);
+  calculatedPrice = calculatedPrice * multiplier;
 
   const minPrice = 1.00;
   return Math.max(minPrice, parseFloat(calculatedPrice.toFixed(2)));

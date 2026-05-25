@@ -725,9 +725,8 @@
         activeContainer.innerHTML = "";
         
         activeList.forEach(evt => {
-          const remain = Math.max(0, evt.endTime - now);
-          const min = Math.floor(remain / 60000);
-          const sec = Math.floor((remain % 60000) / 1000);
+          const dateObj = new Date(evt.startTime);
+          const timeStr = `${dateObj.getHours().toString().padStart(2, '0')}:${dateObj.getMinutes().toString().padStart(2, '0')}`;
           const evtUp = evt.impact >= 0;
 
           const item = document.createElement("div");
@@ -744,12 +743,12 @@
                 <span style="font-size:10px; color:var(--color-muted); display:block; margin-top:2px;">${evt.desc}</span>
               </div>
               <span class="change-percent ${evtUp ? 'up' : 'down'}" style="font-size:10px; white-space:nowrap;">
-                ${evtUp ? '▲' : '▼'} ${Math.abs(evt.impact*100)}%
+                ${evtUp ? '▲' : '▼'} ${evtUp ? '+' : ''}${Math.round(evt.impact*100)}%
               </span>
             </div>
             <div style="display:flex; justify-content:space-between; align-items:center; margin-top:10px; font-size:10px; font-family:var(--font-mono); color:var(--color-muted);">
               <span>CÓDIGO: #${evt.code}</span>
-              <span style="color:#fff;">Restan: ${min}:${sec.toString().padStart(2,'0')}</span>
+              <span style="color:var(--color-cyan); font-weight:700;">● ACTIVO (Desde las ${timeStr})</span>
             </div>
           `;
           activeContainer.appendChild(item);
