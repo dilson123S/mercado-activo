@@ -3,7 +3,7 @@ const path = require('path');
 const https = require('https');
 
 // Base URL para los códigos QR. Puedes cambiar esta URL si despliegas la app en Vercel, Render, etc.
-const BASE_URL = 'http://localhost:5000'; 
+const BASE_URL = 'https://mercado-activo.vercel.app'; 
 const OUTPUT_DIR = path.join(__dirname, 'QRs_para_imprimir');
 
 const STOCKS = [
